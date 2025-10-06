@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat with n8n</title>
+  <!-- Load the CSS for the chat widget -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css"
+    rel="stylesheet"
+  />
+  <style>
+    /* You can override CSS variables or add extra styles here */
+    :root {
+      --chat--color-primary: #4a90e2;
+      --chat--toggle--background: var(--chat--color-primary);
+      /* etc. */
+    }
+    /* Optionally you can constrain or move the chat container */
+    #chat-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      /* width/height can be managed by the widget or by you */
+    }
+  </style>
+</head>
+<body>
+  <!-- Container where chat will mount (optional) -->
+  <div id="chat-container"></div>
+
+  <script type="module">
+    import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+
+    // Generate or reuse a sessionId (so the chat history can be retrieved)
+    const sessionKey = "chatSessionId";
+    let sessionId = localStorage.getItem(sessionKey);
+    if (!sessionId) {
+      // if not present, generate a new one
+      sessionId = crypto.randomUUID();
+      localStorage.setItem(sessionKey, sessionId);
+    }
+
+    // Initialize the chat widget
+    createChat({
+      webhookUrl: "https://YOUR_N8N_INSTANCE_DOMAIN/webhook/YOUR_CHAT_TRIGGER_ID",
+      metadata: {
+        sessionId: sessionId,
+      },
+      target: "#chat-container",
+      mode: "window",
+      loadPreviousSession: true,
+      showWelcomeScreen: false,
+      // you can also override i18n, initialMessages, etc.
+      initialMessages: [
+        "Hi there! 👋",
+        "How can I help you today?"
+      ],
+      chatInputKey: "chatInput",
+      chatSessionKey: "sessionId"
+    });
+  </script>
+</body>
+</html>
