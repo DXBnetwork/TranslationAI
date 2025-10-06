@@ -343,92 +343,77 @@
       return date.toLocaleDateString();
     }
     
-    // Load conversations
-    async function loadConversations() {
-      try {
-        const response = await fetch(CONVERSATIONS_WEBHOOK);
-        const data = await response.json();
-        
-        const container = document.getElementById('conversations');
-        container.innerHTML = '';
-        
-        if (!data.conversations || data.conversations.length === 0) {
-          container.innerHTML = '<div class="loading">No conversations yet</div>';
-          return;
-        }
-        
-        data.conversations.forEach(conv => {
-          const div = document.createElement('div');
-          div.className = 'conversation-item';
-          if (conv.sessionId === currentSession) {
-            div.classList.add('active');
-          }
-          
-          div.innerHTML = `
-            <div class="conversation-preview">${conv.preview}</div>
-            <div class="conversation-time">${formatTime(conv.timestamp)}</div>
-          `;
-          
-          div.onclick = () => loadChat(conv.sessionId);
-          container.appendChild(div);
-        });
-      } catch (error) {
-        console.error('Failed to load conversations:', error);
-        document.getElementById('conversations').innerHTML = '<div class="loading">Failed to load</div>';
-      }
+// Load conversations
+async function loadConversations() {
+  try {
+    const response = await fetch(CONVERSATIONS_WEBHOOK);
+    const data = await response.json();
+    
+    const container = document.getElementById('conversations');
+    container.innerHTML = '';
+    
+    if (!data.conversations || data.conversations.length === 0) {
+      container.innerHTML = '<div class="loading">No conversations yet</div>';
+      return;
     }
     
-    // Display messages
-    function displayMessages(messages, clear = true) {
-      const container = document.getElementById('messages-container');
-      if (clear) container.innerHTML = '';
+    data.conversations.forEach(conv => {
+      const div = document.createElement('div');
+      div.className = 'conversation-item';
+      div.dataset.sessionId = conv.sessionId; // Store sessionId
       
-      messages.forEach((msg, index) => {
-        const isUser = index % 2 === 0;
-        const div = document.createElement('div');
-        div.className = `message ${isUser ? 'user' : 'assistant'}`;
-        
-        div.innerHTML = `
-          <div class="message-avatar">${isUser ? 'U' : 'AI'}</div>
-          <div class="message-bubble">${msg}</div>
-        `;
-        
-        container.appendChild(div);
+      if (conv.sessionId === currentSession) {
+        div.classList.add('active');
+      }
+      
+      div.innerHTML = `
+        <div class="conversation-preview">${conv.preview}</div>
+        <div class="conversation-time">${formatTime(conv.timestamp)}</div>
+      `;
+      
+      // Add click handler
+      div.addEventListener('click', function() {
+        loadChat(this.dataset.sessionId);
       });
       
-      container.scrollTop = container.scrollHeight;
-    }
+      container.appendChild(div);
+    });
+  } catch (error) {
+    console.error('Failed to load conversations:', error);
+    document.getElementById('conversations').innerHTML = '<div class="loading">Failed to load</div>';
+  }
+}
+
+// Load chat
+async function loadChat(sessionId) {
+  try {
+    console.log('Loading chat:', sessionId); // Debug
+    currentSession = sessionId;
     
-    // Load chat
-    async function loadChat(sessionId) {
-      try {
-        currentSession = sessionId;
-        
-        const response = await fetch(HISTORY_WEBHOOK, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId })
-        });
-        
-        const data = await response.json();
-        displayMessages(data.messages || []);
-        
-        // Update sidebar
-        document.querySelectorAll('.conversation-item').forEach(item => {
-          item.classList.remove('active');
-        });
-        
-        const items = Array.from(document.querySelectorAll('.conversation-item'));
-        items.forEach(item => {
-          const preview = item.querySelector('.conversation-preview').textContent;
-          if (data.messages && data.messages.length > 0 && preview === data.messages[0].substring(0, 50)) {
-            item.classList.add('active');
-          }
-        });
-      } catch (error) {
-        console.error('Failed to load chat:', error);
+    const response = await fetch(HISTORY_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId })
+    });
+    
+    const data = await response.json();
+    console.log('Chat data:', data); // Debug
+    
+    displayMessages(data.messages || []);
+    
+    // Update active state
+    document.querySelectorAll('.conversation-item').forEach(item => {
+      if (item.dataset.sessionId === sessionId) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
       }
-    }
+    });
+  } catch (error) {
+    console.error('Failed to load chat:', error);
+    alert('Failed to load conversation');
+  }
+}
     
     // Add typing indicator
     function showTyping() {
