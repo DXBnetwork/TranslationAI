@@ -390,11 +390,7 @@ async function loadChat(sessionId) {
     console.log('Loading chat:', sessionId); // Debug
     currentSession = sessionId;
     
-    const response = await fetch(HISTORY_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId })
-    });
+    const response = await fetch(`${HISTORY_WEBHOOK}?sessionId=${sessionId}`);
     
     const data = await response.json();
     console.log('Chat data:', data); // Debug
@@ -414,7 +410,38 @@ async function loadChat(sessionId) {
     alert('Failed to load conversation');
   }
 }
+// Display messages in chat
+function displayMessages(messages) {
+  const container = document.getElementById('messages-container');
+  container.innerHTML = ''; // Clear welcome message
+  
+  if (!messages || messages.length === 0) {
+    container.innerHTML = `
+      <div class="welcome-message">
+        <h2>No messages yet</h2>
+        <p>Start chatting!</p>
+      </div>
+    `;
+    return;
+  }
+  
+  messages.forEach(msg => {
+    const div = document.createElement('div');
+    div.className = msg.isUser ? 'message user' : 'message assistant';
     
+    const avatar = msg.isUser ? 'U' : 'AI';
+    const content = msg.content || msg; // Handle both formats
+    
+    div.innerHTML = `
+      <div class="message-avatar">${avatar}</div>
+      <div class="message-bubble">${content}</div>
+    `;
+    
+    container.appendChild(div);
+  });
+  
+  container.scrollTop = container.scrollHeight;
+}    
     // Add typing indicator
     function showTyping() {
       const container = document.getElementById('messages-container');
